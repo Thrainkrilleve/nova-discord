@@ -1,0 +1,24 @@
+# Nova's language model: llama.cpp's server on the GPU (Vulkan). Installed by deploy/install-llm.sh;
+# settings in /etc/nova-llm.env.
+[Unit]
+Description=Nova language model (llama-server)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=@USER@
+SupplementaryGroups=render video
+EnvironmentFile=/etc/nova-llm.env
+ExecStart=/opt/nova/llama.cpp/llama-server -m ${MODEL} --mmproj ${MMPROJ} --jinja -ngl 99 \
+    -c ${CONTEXT} --parallel ${PARALLEL} --spec-type ${SPEC} --spec-draft-n-max 2 \
+    --host ${HOST} --port ${PORT}
+Environment=LD_LIBRARY_PATH=/opt/nova/llama.cpp
+Restart=on-failure
+RestartSec=10
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

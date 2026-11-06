@@ -1,0 +1,18 @@
+name: Security & Virus Scan
+on: [push]
+
+jobs:
+  virus-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Install and Run ClamAV
+        run: |
+          apt-get update
+          apt-get install -y clamav
+          freshclam || true # Update definitions
+          
+          # Run the scan and fail if a virus is found
+          clamscan -r -i .

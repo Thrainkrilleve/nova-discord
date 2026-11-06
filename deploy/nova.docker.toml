@@ -1,0 +1,48 @@
+# Nova's settings inside the Docker stack. Copy to deploy/nova.toml (gitignored) and adjust.
+# Services are reached by their compose names; secrets stay in ../.env.
+
+[llm]
+model = "nova"          # llama-server ignores the name
+thinking = true
+vision = true           # the stack starts llama-server with --mmproj
+log_thinking = false    # true: her reasoning goes to the log (debugging; can contain private text)
+
+[bot]
+open_dms = false        # true: anyone in a shared server can DM her (otherwise only the owner)
+log_messages = false    # true: message text goes to the log (who/where/length always does)
+history_messages = 30
+history_chars = 12000
+
+[translate]
+enabled = true
+nllb_url = "http://nllb:8001/translate"
+auto = "channels"
+
+[search]
+order = "searxng,google,brave,ddg"
+searxng_url = "http://searxng:8080"
+
+[voice]
+whisper_url = "http://whisper:8003"
+tts_url = "http://tts:8002"
+
+[aa]
+reporter_url = ""       # e.g. "https://auth.example.com/reporter/" once aa-reporter's API is live
+channels = ""
+home_corp = ""          # our corp's ID or ticker: what "the corp" means when nobody names one
+
+[serve]
+enabled = true
+host = "0.0.0.0"        # inside the container; compose publishes it on the host's 127.0.0.1 only
+port = 8740
+public_url = "https://nova.example.com"   # needs NOVA_API_KEY in .env
+# The web app at / signs people in with Discord: add https://nova.example.com/auth/callback as a
+# redirect in the Discord application (OAuth2 > Redirects) and put its secret in .env
+discord_client_id = ""   # Nova's own Discord application
+web_users = ""           # Discord IDs besides the owner who may sign in, comma-separated
+
+[storage]
+data_dir = "var"
+
+[eve]
+sde_path = ""           # var/sde; `docker compose exec nova nova sde` downloads CCP's export

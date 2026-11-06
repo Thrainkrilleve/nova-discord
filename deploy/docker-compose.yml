@@ -1,0 +1,104 @@
+# Nova's stack for Ubuntu with Docker Desktop. Full steps: deploy/DEPLOY.md
+#
+#   docker compose --env-file .env -f deploy/docker-compose.yml up -d     # from the repo folder (images: DEPLOY.md step 6)
+#   Update Nova only: ... build nova, then ... up -d --no-deps nova (a full rebuild can starve the server)
+#
+# The language model is NOT in here: Docker Desktop runs containers in a VM that can't use the GPU, so
+# llama-server runs on the host (deploy/install-llm.sh, service "nova-llm" on 127.0.0.1:8780) and Nova
+# reaches it as host.docker.internal.
+#
+# Published on the host's 127.0.0.1 only, for cloudflared: nova.example.com -> http://localhost:8740.
+# That one port is Nova's web app (Discord sign-in), her chat-app API (API keys) and her signed file links.
+# Everything else talks over the stack's own network.
+name: nova
+
+x-restart: &restart
+  restart: unless-stopped
+
+services:
+  nova:
+    <<: *restart
+    build:
+      context: ..
+      dockerfile: deploy/nova.Dockerfile
+    image: nova:latest
+    # Sandboxed: she shares the server with Alliance Auth and Forgejo. Kill switch:
+    #   docker compose -f deploy/docker-compose.yml kill nova
+    read_only: true                       # only /app/var (her volume) and /tmp are writable
+    tmpfs:
+      - /tmp:size=512m
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    cpus: "${NOVA_CPUS:-4}"
+    mem_limit: ${NOVA_MEM:-4g}
+    pids_limit: 256
+    env_file: ../.env
+    environment:
+      NOVA_LLM_BASE_URL: http://host.docker.internal:${NOVA_LLM_PORT:-8780}/v1   # nova-llm on the host
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # Docker Desktop has it already; plain Docker Engine needs this
+    volumes:
+      - ./nova.toml:/app/nova.toml:ro
+      - nova-data:/app/var                # memory, attached files, SDE
+    ports:
+      - "127.0.0.1:8740:8740"             # web app + chat-app API on the host (local use, health checks)
+    networks:
+      default:
+      tunnel:                             # Forgejo's cloudflared reaches her here as http://nova-web:8740
+        aliases: [nova-web]
+    depends_on:
+      nllb:
+        condition: service_started
+      whisper:
+        condition: service_started
+      tts:
+        condition: service_started
+      searxng:
+        condition: service_started
+
+  nllb:
+    <<: *restart
+    build:
+      context: ..
+      dockerfile: deploy/nllb.Dockerfile
+    image: nova-nllb:latest
+    volumes:
+      - hf-cache:/cache/hf
+
+  whisper:
+    <<: *restart
+    build:
+      context: ..
+      dockerfile: deploy/whisper.Dockerfile
+    image: nova-whisper:latest
+    volumes:
+      - whisper-models:/models
+
+  tts:
+    <<: *restart
+    build:
+      context: ..
+      dockerfile: deploy/tts.Dockerfile
+    image: nova-tts:latest
+    volumes:
+      - hf-cache:/cache/hf
+
+  searxng:
+    <<: *restart
+    image: docker.io/searxng/searxng:2026.10.16-8252c0bf6   # pinned; bump deliberately
+    volumes:
+      - ../services/searxng/settings.yml:/etc/searxng/settings.yml:ro
+    environment:
+      SEARXNG_SECRET: ${SEARXNG_SECRET:?set SEARXNG_SECRET in .env}
+
+volumes:
+  nova-data:
+  hf-cache:
+  whisper-models:
+
+networks:
+  # The server's shared network for cloudflared (Forgejo's tunnel serves *.example.com). Nova joins
+  # it, never the other way round, so the tunnel never depends on Nova. Missing? docker network create tunnel
+  tunnel:
+    external: true

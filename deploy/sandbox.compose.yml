@@ -1,0 +1,39 @@
+# A sandboxed Nova on a Windows PC (Docker Desktop), for stress tests: same hardening as the server
+# stack, but the model is LM Studio on the host, there's no Discord login (API only), and she gets a
+# fresh, empty memory. Nothing she does reaches the real nova.db.
+#
+#   docker compose -f deploy/sandbox.compose.yml -p nova-sandbox up -d --build
+#   python evals/stress.py --url http://127.0.0.1:8741/v1 --levels 1,4
+#   docker compose -p nova-sandbox kill        # kill switch
+#   docker compose -p nova-sandbox down -v     # remove it and its data
+name: nova-sandbox
+
+services:
+  nova:
+    build:
+      context: ..
+      dockerfile: deploy/nova.Dockerfile
+    image: nova:latest
+    command: ["nova", "serve"]
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    cpus: "4"
+    mem_limit: 4g
+    pids_limit: 256
+    environment:
+      NOVA_LLM_BASE_URL: http://host.docker.internal:8080/v1
+      NOVA_OWNER_ID: "1"
+      NOVA_API_KEY: ${NOVA_SANDBOX_KEY:-sandbox}
+    volumes:
+      - ./sandbox.toml:/app/nova.toml:ro
+      - ${NOVA_SDE_DIR:?set NOVA_SDE_DIR to the unzipped SDE folder}:/sde:ro
+      - sandbox-data:/app/var
+    ports:
+      - "127.0.0.1:8741:8740"   # 8741 so it never collides with the real Nova's 8740
+
+volumes:
+  sandbox-data:

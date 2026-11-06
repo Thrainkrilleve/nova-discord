@@ -1,0 +1,20 @@
+# Minimal SearXNG config for Nova: defaults plus the JSON output Nova reads.
+use_default_settings:
+  engines:
+    remove:               # Tor (.onion) engines: they need a Tor proxy, so they only log load errors
+      - ahmia
+      - torch
+
+server:
+  limiter: false          # local-only instance; no bot protection needed
+  image_proxy: false
+  public_instance: false
+
+search:
+  safe_search: 0
+  formats:
+    - html
+    - json                # required: Nova calls /search?format=json
+
+ui:
+  default_theme: simple

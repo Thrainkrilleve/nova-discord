@@ -1,0 +1,5 @@
+# Shell scripts run inside Linux containers: never check them out with CRLF
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.Dockerfile text eol=lf
+*.service text eol=lf

@@ -1,0 +1,9 @@
+# NLLB-200 translation service for Nova (translator_api.py).
+# Install torch first, matching the machine:
+#   ROCm (server, 7800 XT): use the ROCm wheel index command from your original requirements.txt
+#   CPU only:               pip install torch --index-url https://download.pytorch.org/whl/cpu
+fastapi
+uvicorn
+transformers
+sentencepiece
+python-dotenv

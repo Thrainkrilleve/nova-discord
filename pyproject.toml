@@ -1,0 +1,37 @@
+[project]
+name = "nova"
+version = "0.2.0"
+description = "Nova: a local, self-hosted Discord assistant"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+dependencies = [
+    "discord.py>=2.4",
+    "aiohttp>=3.9",
+    "python-dotenv>=1.0",
+    "tzdata>=2024.1",  # zoneinfo has no system tz database on Windows
+    "lingua-language-detector>=2.0",
+    "imageio-ffmpeg>=0.5",  # bundled ffmpeg for voice messages and video editing
+    "pypdf>=5",  # text from attached PDFs
+    "regex>=2024.4",  # user-supplied search patterns with a time limit
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.23"]
+
+[project.scripts]
+nova = "nova.__main__:main"
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+nova = ["static/*"]   # the web app's page, script, styles and icon
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <title>Nova</title>
+  <link rel="icon" href="/static/icon.svg">
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body class="chat">
+  <header class="bar">
+    <div class="who"><img class="mark" src="/static/icon.svg" alt=""><span class="title">Nova</span></div>
+    <div class="me">
+      <span id="me-name"></span>
+      <button id="open-settings" class="ghost icon" type="button" title="Settings" aria-label="Settings">⚙</button>
+      <button id="signout" class="ghost" type="button" hidden>Sign out</button>
+    </div>
+  </header>
+
+  <main id="log" class="log" aria-live="polite">
+    <p id="empty" class="empty" hidden>Say hi. Nova remembers you across Discord and here.</p>
+  </main>
+
+  <form id="composer" class="composer" autocomplete="off">
+    <div id="files" class="files" hidden></div>
+    <div class="row">
+      <label class="attach ghost" title="Attach files">
+        <input id="file-input" type="file" multiple hidden>
+        <span aria-hidden="true">+</span><span class="sr">Attach files</span>
+      </label>
+      <textarea id="input" rows="1" placeholder="Message Nova" aria-label="Message Nova"></textarea>
+      <button id="send" class="send" type="submit" title="Send">Send</button>
+    </div>
+    <p id="status" class="status" role="status"></p>
+  </form>
+
+  <dialog id="settings" class="settings" aria-labelledby="settings-title">
+    <form method="dialog" class="settings-head">
+      <h2 id="settings-title">Settings</h2>
+      <button class="ghost icon" value="close" aria-label="Close">✕</button>
+    </form>
+
+    <section>
+      <h3>Appearance</h3>
+      <p class="hint">Saved in this browser.</p>
+      <label class="field">Theme
+        <select id="pref-theme">
+          <option value="system">Match my device</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+        </select>
+      </label>
+      <label class="field">Text size
+        <select id="pref-size">
+          <option value="small">Small</option>
+          <option value="medium">Medium</option>
+          <option value="large">Large</option>
+        </select>
+      </label>
+      <label class="field">Clock
+        <select id="pref-clock">
+          <option value="auto">Like my device</option>
+          <option value="12">12-hour (9:41 PM)</option>
+          <option value="24">24-hour (21:41)</option>
+        </select>
+      </label>
+      <label class="check"><input id="pref-stamps" type="checkbox"> Show message times</label>
+      <label class="check"><input id="pref-enter" type="checkbox"> Enter sends (Shift+Enter for a new line)</label>
+      <p class="hint" id="enter-hint" hidden>With this off, Ctrl+Enter sends.</p>
+    </section>
+
+    <section>
+      <h3>Your timezone</h3>
+      <p class="hint">What Nova uses for "your local time", here and in Discord (same as /timezone there).</p>
+      <div class="inline">
+        <input id="tz" list="tz-list" placeholder="e.g. America/Denver" aria-label="Timezone">
+        <datalist id="tz-list"></datalist>
+        <button id="tz-save" class="small" type="button">Save</button>
+      </div>
+      <p class="hint" id="tz-browser"></p>
+    </section>
+
+    <section>
+      <h3>What Nova remembers about you</h3>
+      <p class="hint">Facts she saved from your conversations. Delete anything that's wrong or private.</p>
+      <ul id="facts" class="facts"></ul>
+      <p class="hint" id="facts-empty" hidden>Nothing saved yet.</p>
+    </section>
+
+    <section>
+      <h3>Conversation</h3>
+      <p class="hint">Start the web chat afresh. Nova can still recall it if you ask.</p>
+      <button id="clear-history" class="small danger" type="button">Clear chat history</button>
+    </section>
+
+    <section id="account-section">
+      <h3>Account</h3>
+      <p class="hint">Ends every signed-in session, on every device, including this one.</p>
+      <button id="signout-all" class="small danger" type="button">Sign out everywhere</button>
+    </section>
+    <p id="settings-status" class="status" role="status"></p>
+  </dialog>
+</body>
+</html>

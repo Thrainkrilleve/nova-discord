@@ -1,0 +1,21 @@
+# SearXNG: a self-hosted metasearch engine (Google, Bing, DuckDuckGo, Wikipedia... in one) with a
+# JSON API for Nova. Private, free, no API keys. Only listens on localhost.
+#
+#   cd services/searxng
+#   docker compose up -d
+#
+# then in nova.toml:
+#   [search]
+#   searxng_url = "http://127.0.0.1:8888"
+services:
+  searxng:
+    image: docker.io/searxng/searxng:latest
+    container_name: nova-searxng
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8888:8080"
+    volumes:
+      - ./settings.yml:/etc/searxng/settings.yml:ro
+    environment:
+      # Any long random string; only used to sign SearXNG's own cookies
+      - SEARXNG_SECRET=${SEARXNG_SECRET:-change-me-to-a-long-random-string}

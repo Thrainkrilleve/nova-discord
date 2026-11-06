@@ -1,0 +1,22 @@
+.env
+.env.*
+!.env.example
+bot_token.json
+user_tokens.json
+venv/
+.venv/
+node_modules/
+__pycache__/
+logs/
+checkpoint-*/
+*.gguf
+
+# Combined Nova app: local config and runtime data stay out of git
+/nova.toml
+/var/
+*.egg-info/
+.pytest_cache/
+
+# Model eval output (machine-specific)
+/evals/results/
+/deploy/nova.toml

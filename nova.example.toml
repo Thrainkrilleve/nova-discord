@@ -1,0 +1,115 @@
+# Copy to nova.toml to override defaults. Secrets go in .env, not here.
+
+[llm]
+# llama-server ignores the model name; other servers (Ollama, LM Studio) need it.
+model = "local"
+temperature = 0.7
+top_p = 0.9
+max_tokens = 4096
+# Keep this low. The old Nova used 1.4, which garbled spelling ("wuz", "thingz").
+repeat_penalty = 1.05
+# Let reasoning models think before answering (slower, sometimes deeper). false = answer directly.
+thinking = true
+# The model can see images (needs its mmproj file: llama-server -Mmproj, or beside the model in LM Studio)
+vision = false
+# Log her reasoning (the hidden thinking) after each model turn. Can repeat private text; debugging only.
+log_thinking = false
+
+[bot]
+# Guild (server) ID for instant slash-command sync while developing.
+# Without it, global commands can take up to an hour to appear.
+dev_guild_id = 0
+# Answer direct messages from anyone (true) or only from the owner (false).
+open_dms = false
+# Write the text of each message Nova acts on to the log (who, where and length always are). DMs are
+# private, so leave this off unless you're debugging.
+log_messages = false
+# How much channel history Nova sees per reply.
+history_messages = 30
+history_chars = 12000
+
+[persona]
+# Optional path to a Markdown file that replaces the built-in persona.
+file = ""
+
+[storage]
+data_dir = "var"
+
+[translate]
+# NLLB-200 service (services/nllb/translator_api.py); Nova's own model polishes its output.
+enabled = true
+nllb_url = "http://127.0.0.1:8001/translate"
+polish = true
+# "channels": only where /autotranslate is on; "all": every channel Nova can read
+# (what the old translator bot did; switch once it is retired); "off"
+auto = "channels"
+
+[search]
+# Providers tried in order; unconfigured ones are skipped. Keys for google/brave go in .env.
+order = "searxng,google,brave,ddg"
+# Self-hosted SearXNG (services/searxng): best results, no keys, no rate limits
+searxng_url = ""
+results = 6
+
+[voice]
+# scripts/start-voice.ps1 (.sh) runs both services. Empty = off.
+whisper_url = ""   # "http://127.0.0.1:8003": transcribes voice messages
+tts_url = ""       # "http://127.0.0.1:8002": speak tool and /say
+tts_voice = "alba"
+
+[aa]
+# aa-reporter on your Alliance Auth (needs its nova-api release); the key goes in .env as NOVA_AA_TOKEN
+reporter_url = ""   # e.g. "https://auth.example.com/reporter/"
+# Recruiter channel IDs (comma-separated) where background checks are allowed; the owner's DMs always are
+channels = ""
+# Our corporation's ID (or ticker): what "the corp" means when a question names none
+home_corp = ""
+
+[serve]
+# An OpenAI-compatible API in front of Nova, so any chat app (Open WebUI, Jan, Chatbox, phone apps,
+# editors) talks to the same Nova as Discord: persona, tools, fact-checking and one shared memory.
+# true = start it with the bot (`nova run`); `nova serve` runs it without Discord.
+enabled = false
+host = "127.0.0.1"   # anything else (e.g. 0.0.0.0 for your laptop) needs NOVA_API_KEY in .env
+port = 8740
+public_url = ""      # e.g. "https://nova.example.com" behind a Cloudflare Tunnel or proxy; needs NOVA_API_KEY
+# The web app: a chat page at http://127.0.0.1:8740/. Locally it needs no sign-in (you are the owner);
+# anywhere else people sign in with Discord: add <public_url>/auth/callback as a redirect in your Discord
+# application (OAuth2 > Redirects) and put its client secret in .env as NOVA_DISCORD_CLIENT_SECRET.
+web = true
+discord_client_id = ""   # the application ID (the bot's own application works)
+web_users = ""           # Discord IDs besides the owner who may sign in, comma-separated
+
+[admin]
+# Server control: Nova posts, pins, edits her own messages, sets topics and creates channels when asked.
+# Free-post channels (NOVA_FREE_POST_CHANNELS in .env) need no approval for posts, edits and pins of her
+# own messages. Everything else, and every topic change or new channel, needs a click on Confirm from a
+# member with one of these roles (role IDs are safer than names; names are matched exactly).
+approver_roles = "Root Privileges,Logi Bros"
+# The only server(s) this applies to (server IDs, comma-separated). Empty = off everywhere. In any other
+# server Nova still chats, does AA lookups and so on, but can't post, pin or change channels.
+servers = ""
+# Categories (IDs or names) where create_channel may create channels; empty = never
+categories = ""
+# Channel ID every executed action is logged to (e.g. #server-notifications)
+audit_channel = ""
+approval_minutes = 30
+free_posts_per_10min = 6
+
+[autonomy]
+# "Free will": Nova looks in on these channels on a schedule and decides whether to say something.
+# Off by default; only free-post channels count. Staying quiet is the usual outcome.
+enabled = false
+channels = ""            # channel IDs, comma-separated (each must also be in NOVA_FREE_POST_CHANNELS)
+interval_minutes = 45
+jitter_minutes = 15
+max_posts_per_day = 3    # per channel, rolling 24 hours
+min_gap_minutes = 180
+lookback_messages = 25
+wake_on_messages = 0     # also look in after this many new messages (0 = schedule only)
+mark_posts = true        # a small "unprompted" line under each post
+
+[eve]
+# Unzipped EVE static data export (JSONL). Leave empty to use <data_dir>/sde,
+# which `nova sde update` downloads and keeps current.
+sde_path = ""

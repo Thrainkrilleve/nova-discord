@@ -1,0 +1,16 @@
+# Settings for the sandbox (deploy/sandbox.compose.yml): API only, LM Studio on the host.
+[llm]
+model = "qwen3.5-9b-the-defiant-fable-uncensored-heretic-neo-imatrix-max-mtp"   # LM Studio needs the exact id
+thinking = true
+vision = true
+
+[translate]
+enabled = false
+
+[serve]
+enabled = true
+host = "0.0.0.0"   # inside the container; published on the host's 127.0.0.1:8741 only
+port = 8740
+
+[eve]
+sde_path = "/sde"
