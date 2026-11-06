@@ -210,6 +210,12 @@ In server channels Nova only sees the last `history_minutes` (default 120) of ch
 
 Every message is logged in `var/nova.db` (gitignored). `/reset` only hides earlier history from the model; the log stays as future fine-tuning material.
 
+
+## Contributing
+
+Bug reports and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) and the [code of conduct](CODE_OF_CONDUCT.md).
+
+To report a vulnerability, follow [SECURITY.md](SECURITY.md) instead of opening a public issue.
 ## License
 
 MIT. See [LICENSE](LICENSE).
