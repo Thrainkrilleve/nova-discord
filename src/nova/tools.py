@@ -975,6 +975,22 @@ def add_file_tools(reg: ToolRegistry) -> None:
         return wallet_report(workspace(ctx).text(name))
 
 
+def _pilot_ship(sde: "SDE", ship: str) -> tuple[int | None, str, str]:
+    """(type id, canonical name, note). A note and no type id is an error to show."""
+    query = ship.strip()
+    if not query:
+        return None, "", ""
+    matches = sde.find(query)
+    if not matches:
+        return None, "", f"No EVE ship matches {query!r}."
+    chosen = matches[0]
+    _name, _group, category = sde.type_info(chosen.type_id)
+    if category and category != "Ship":
+        return None, "", f"{chosen.name} is a {category}, not a ship."
+    note = "" if chosen.name.lower() == query.lower() else f"Using {chosen.name} for {query!r}."
+    return chosen.type_id, chosen.name, note
+
+
 def add_eve_tools(reg: ToolRegistry, sde: "SDE") -> None:
 
     @reg.tool(
@@ -1072,26 +1088,58 @@ def add_eve_tools(reg: ToolRegistry, sde: "SDE") -> None:
 
     @reg.tool(
         "eve_pilot",
-        "Someone's zKillboard record: a pilot, corporation or alliance by name or by zkillboard.com/character/"
-        "(or /corporation/, /alliance/) link. Kills and losses with ISK, efficiency, solo kills, danger and gang "
-        "ratio, the last few months, this week's activity, and the ships and systems they kill in most. For one "
-        "kill use eve_killmail.",
+        "Someone's zKillboard record: a pilot, corporation or alliance by name or by zkillboard.com/character/ "
+        "(or /corporation/, /alliance/) link. All-time kills, losses, ISK, efficiency, solo, danger and gang "
+        "ratio, month totals and a short sample of the newest killmails. zKillboard keeps the full history and "
+        "this tool pages it (up to 1000 killmails a page, newest first): pass since/until (\"last 6 months\", "
+        "\"since May\", \"2026-05-01\"), ship and side (kills or losses) to count or list older killmails. "
+        "Never say zKillboard only indexes recent activity, or that older kills need a kill ID. If the result "
+        "says it was truncated, say the scan was cut off and quote the oldest killmail time it reached; older "
+        "killmails are still on zKillboard. For one kill use eve_killmail.",
         {"type": "object", "properties": {
             "who": {"type": "string", "description": "a name, or a zKillboard character/corporation/alliance link"},
             "kind": {"type": "string", "enum": ["character", "corporation", "alliance"],
-                     "description": "optional, when a name could be several"}},
+                     "description": "optional, when a name could be several"},
+            "since": {"type": "string", "description": "optional start as said, e.g. \"last 6 months\", "
+                                                       "\"since May\", \"2026-05-01\" (EVE time, included). "
+                                                       "A bare day or month means only that period."},
+            "until": {"type": "string", "description": "optional end date, included. One day: since and until "
+                                                       "the same. Omit to run through today."},
+            "ship": {"type": "string", "description": "optional hull, e.g. Pacifier. Losses: times they lost "
+                                                      "that hull. Kills: times they killed that hull."},
+            "side": {"type": "string", "enum": ["kills", "losses", "both"],
+                     "description": "kills they got, losses they suffered, or both. Default both."}},
          "required": ["who"]},
     )
-    async def eve_pilot(ctx: ToolContext, who: str, kind: str = "") -> str:
+    async def eve_pilot(ctx: ToolContext, who: str, kind: str = "", since: str = "", until: str = "",
+                        ship: str = "", side: str = "both") -> str:
+        since, until, ship = since or "", until or "", ship or ""
+        side = (side or "both").strip().lower()
+        if side not in ("kills", "losses", "both"):
+            return "side must be kills, losses or both."
+        ship_type_id, ship_name, note = _pilot_ship(sde, ship)
+        if ship_type_id is None and note:
+            return note
+        try:
+            start, end = resolve(since, until) if since.strip() or until.strip() else (None, None)
+        except DateError as e:
+            return f"Date problem: {e}."
+        filtered = bool(start or end or ship_type_id or side != "both")
         try:
             if ref := entity_ref(who):
-                return await pilots.describe(*ref)
-            if who.strip().isdigit():
+                found_kind, entity_id = ref
+            elif who.strip().isdigit():
                 return "Give a name or a zKillboard character/corporation/alliance link; a bare number is ambiguous."
-            found = await pilots.resolve(who, kind)
-            if found is None:
-                return f"No EVE {kind or 'character, corporation or alliance'} is called {who!r}."
-            return await pilots.describe(found[0], found[1])
+            else:
+                found = await pilots.resolve(who, kind)
+                if found is None:
+                    return f"No EVE {kind or 'character, corporation or alliance'} is called {who!r}."
+                found_kind, entity_id = found[0], found[1]
+            if filtered:
+                text = await pilots.kill_history(found_kind, entity_id, side=side, ship_type_id=ship_type_id,
+                                                 ship_name=ship_name, start=start, end=end)
+                return f"{note}\n{text}" if note else text
+            return await pilots.describe(found_kind, entity_id)
         except PilotError as e:
             return f"Couldn't load that zKillboard record: {e}. Say so; don't guess their numbers."
 
